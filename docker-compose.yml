@@ -1,0 +1,14 @@
+version: "3.9"
+services:
+  django:
+    build: .
+    volumes:
+      - ./:/app/:ro
+    depends_on:
+      - postgres
+  
+  postgres:
+    image: postgres:12.4
+    environment:
+      POSTGRES_USER: django_postgres_views
+      POSTGRES_PASSWORD: password
