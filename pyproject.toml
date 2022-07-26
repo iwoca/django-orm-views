@@ -1,0 +1,19 @@
+[project]
+name = "django-views"
+version = "0.0.1rc1"
+authors = [
+  { name="Josh Dutton", email="j.dutton@iwoca.co.uk" },
+]
+description = "A framework for managing database views based on Django"
+readme = "README.md"
+license = { file="LICENSE" }
+requires-python = ">=3.7"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/iwoca/django-views"
+"Bug Tracker" = "https://github.com/iwoca/django-views/issues"
