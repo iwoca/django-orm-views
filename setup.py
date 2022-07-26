@@ -4,8 +4,8 @@ from setuptools import setup, find_packages
 
 
 setup(
-    name='django_postgres_views',
-    version=os.environ['VERSION'],
+    name='django_orm_views',
+    version='0.0.1rc1',
     description='Package to define manage Postgres views on a Django server',
     author='iwoca',
     packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
@@ -14,7 +14,7 @@ setup(
     install_requires=[
         'django>=2.1,<4.0',
         'dataclasses>=0.7; python_version < "3.7.0"',
-        'iwoca-data-docs[ci]==0.8.7'],
+    ],
     extras_require={
         'test': [
             'psycopg2-binary==2.8.6'

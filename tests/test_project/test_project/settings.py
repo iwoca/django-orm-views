@@ -37,7 +37,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'django_postgres_views',
+    'django_orm_views',
 ]
 
 MIDDLEWARE = [
@@ -77,8 +77,8 @@ WSGI_APPLICATION = 'test_project.wsgi.application'
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql_psycopg2',
-        'NAME': 'django_postgres_views',
-        'USER': 'django_postgres_views',
+        'NAME': 'django_orm_views',
+        'USER': 'django_orm_views',
         'PASSWORD': 'password',
         'HOST': 'postgres',
         'PORT': '',

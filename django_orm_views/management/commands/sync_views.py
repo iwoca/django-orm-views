@@ -5,7 +5,7 @@ from ...sync import sync_views
 
 
 class Command(BaseCommand):
-    help = 'Syncs all postgres views existing using the django_postgres_views framework'
+    help = 'Syncs all postgres views existing using the django_orm_views framework'
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -22,6 +22,6 @@ class Command(BaseCommand):
         )
 
         # Inform everything that we sync'd views (Logging + stdout)
-        msg = 'Successfully sync\'d all Postgres views using django_postgres_views'
+        msg = 'Successfully sync\'d all views using django_orm_views'
         LOG.getChild('sync_views').info(msg)
         self.stdout.write(msg)

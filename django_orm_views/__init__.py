@@ -8,4 +8,4 @@ from .views import (
 
 from .sync import sync_views
 
-default_app_config = 'django_postgres_views.apps.DjangoPostgresViewsConfig'
+default_app_config = 'django_orm_views.apps.DjangoPostgresViewsConfig'
