@@ -10,29 +10,7 @@ except ImportError:
 
 from .constants import SUB_SCHEMA_NAME, ParameterisedSQL
 from .register import AutoRegisterMixin
-from .exceptions import NotDocumentedError, InvalidViewDepencies
-
-
-class DocumentedViewMixin:
-    run_documentation_check = True
-
-    def __init_subclass__(cls, **kwargs):
-        super().__init_subclass__(**kwargs)
-        if not cls.run_documentation_check:
-            return
-        if not hasattr(cls, 'Docs'):
-            raise NotDocumentedError(f'{cls.__name__} is not documented.')
-
-        docs = cls.Docs
-        if not docs.documentation:
-            raise NotDocumentedError(f'{cls.__name__} has no documentation attribute.  This is required.')
-
-        if not docs.Fields:
-            raise NotDocumentedError(f'{cls.__name__} has no fields documented.  These are required.')
-
-
-class UndocumentedViewMixin(DocumentedViewMixin):
-    run_documentation_check = False
+from .exceptions import InvalidViewDepencies
 
 
 class HiddenViewMixin:
@@ -91,7 +69,6 @@ class BasePostgresView:
 
         if len(set([view.database for view in cls.view_dependencies])) > 1:
             raise InvalidViewDepencies("View dependencies connect to more than one database")
-
 
     @property
     def _parameterised_sql(self) -> ParameterisedSQL:
@@ -170,7 +147,7 @@ class BasePostgresView:
         return ParameterisedSQL(sql=qry, params=[])
 
 
-class BasePostgresViewFromQueryset(AutoRegisterMixin, BasePostgresView, should_register=False):
+class PostgresViewFromQueryset(AutoRegisterMixin, BasePostgresView, should_register=False):
     """Used as the interface to the package for defining views based on a Django Queryset."""
 
     def get_queryset(self) -> QuerySet:
@@ -184,7 +161,7 @@ class BasePostgresViewFromQueryset(AutoRegisterMixin, BasePostgresView, should_r
         return parameterised_sql
 
 
-class BasePostgresViewFromSQL(AutoRegisterMixin, BasePostgresView, should_register=False):
+class PostgresViewFromSQL(AutoRegisterMixin, BasePostgresView, should_register=False):
     """Used as the interface to the package for defining views based on raw SQL"""
 
     @classproperty
@@ -194,29 +171,3 @@ class BasePostgresViewFromSQL(AutoRegisterMixin, BasePostgresView, should_regist
     @property
     def _parameterised_sql(self) -> ParameterisedSQL:
         return ParameterisedSQL(sql=self.sql, params=[])
-
-
-class PostgresViewFromQueryset(DocumentedViewMixin, BasePostgresViewFromQueryset, should_register=False):
-    class Docs:
-        documentation = "View level description"
-
-        class Fields:
-            id = "Field level description"
-
-
-class PostgresViewFromSQL(DocumentedViewMixin, BasePostgresViewFromSQL, should_register=False):
-    class Docs:
-        documentation = "View level description"
-
-        class Fields:
-            id = "Field level description"
-
-
-class UndocumentedPostgresViewFromQueryset(HiddenViewMixin, UndocumentedViewMixin, BasePostgresViewFromQueryset,
-                                           should_register=False):
-    pass
-
-
-class UndocumentedPostgresViewFromSQL(HiddenViewMixin, UndocumentedViewMixin, BasePostgresViewFromSQL,
-                                      should_register=False):
-    pass
