@@ -27,7 +27,7 @@ class MyQuerysetView(PostgresViewFromQueryset):
         )
 ```
 
-See some more examples in the tests (here)[https://github.com/iwoca/django-orm-views/blob/main/tests/test_project/test_app/postgres_views.py]
+See some more examples in the tests [here](https://github.com/iwoca/django-orm-views/blob/main/tests/test_project/test_app/postgres_views.py)
 
 
 This also supports the construction of materialised views via `PostgresMaterialisedViewMixin`. Note that the function `refresh_materialized_view` will
