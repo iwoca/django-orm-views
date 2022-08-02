@@ -13,9 +13,9 @@ on:
     types: [published]
 
 # This is purely for local development purposes
-  push:
-    branches:    
-      - 'josh/remove_iwoca_specifics'
+#   push:
+#     branches:    
+#       - 'josh/remove_iwoca_specifics'
 
 permissions:
   contents: read
