@@ -27,6 +27,8 @@ class MyQuerysetView(PostgresViewFromQueryset):
         )
 ```
 
+See some more examples in the tests (here)[https://github.com/iwoca/django-orm-views/blob/main/tests/test_project/test_app/postgres_views.py]
+
 
 This also supports the construction of materialised views via `PostgresMaterialisedViewMixin`. Note that the function `refresh_materialized_view` will
 need to be managed by the user in order to keep these up to date where required.
@@ -62,6 +64,36 @@ migrations and they would just muddy our migration states.
 * Add a `PostgresViewFromQueryset` or `PostgresViewFromSQL` 
 to your `postgres_views.py` (as above)
 * run `./manage.py sync_views`
+
+A `postgres_views.py` file might look something like the following:
+
+```python
+class ComplexViewFromQueryset(PostgresViewFromQueryset):
+
+    prefix = 'test'  # This is optional, but allows you to prefix the table names for views
+
+    def get_queryset(self):  # Return a `.values` with the query you desire
+        return (
+            TestModelWithForeignKey
+            .objects
+            .all()
+            .annotate(
+                double_integer_col=F('foreign_key__integer_col') * 2
+            )
+            .values(
+                'id',
+                'foreign_key__id',
+                'foreign_key__integer_col',
+                'foreign_key__character_col',
+                'foreign_key__date_col',
+                'foreign_key__datetime_col',
+                'double_integer_col',
+            )
+        )
+```
+
+When we run the `./manage.py sync_views`, we'll create a view called `test_complexviewfromqueryset` under
+the `views` schema.
 
 Note, you can put `./manage.py sync_views` into your CI/CD.  It works by:
 * Opening a transaction
