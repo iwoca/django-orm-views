@@ -1,10 +1,8 @@
 import itertools
 
-from typing import Optional, List
+from typing import Optional
 
 from django.db import connections, transaction
-from iwoca_data_docs.models import TableType, FieldDoc, TableDoc, Country
-
 
 from .exceptions import CyclicDependencyError
 from .constants import SUB_SCHEMA_NAME, LOG
@@ -12,7 +10,7 @@ from .register import registry
 from .views import PostgresMaterialisedViewMixin
 
 
-def _topological_sort_views(list_of_views):
+def topological_sort_views(list_of_views):
     """Implements a topological sort to build the views based on their dependencies.  This
     is because the SQL needs to be executed in the correct order.
 
@@ -67,7 +65,7 @@ def sync_views(
     logger.info('Syncing view registry for databases %s', list(registry.keys()))
 
     for database, views in registry.items():
-        views_to_generate = _topological_sort_views(views)
+        views_to_generate = topological_sort_views(views)
         with connections[database].cursor() as cursor:
             with transaction.atomic():
                 # Drop the view schema and recreate it
@@ -92,31 +90,6 @@ def sync_views(
         LOG.info('Successfully sync\'d %s views for %s database', len(views_to_generate), database)
 
     LOG.info('Successfully sync\'d %s views', len(registry))
-
-
-def generate_view_docs() -> List[TableDoc]:
-    docs_list: List[TableDoc] = []
-
-    for database, views in registry.items():
-        views_to_generate = _topological_sort_views(views)
-
-        for view in views_to_generate:
-            if not view.run_documentation_check:
-                continue
-            with connections[database].cursor() as cursor:
-                cursor.execute(view.schema_qry.sql, params=view.schema_qry.params)
-                field_list = cursor.fetchall()
-
-            validated_field_list = [FieldDoc(name=name,
-                                             type=field_type,
-                                             description=getattr(view.Docs.Fields, name, None),
-                                             )  # TODO derive country from schema query
-                                    for name, field_type in field_list]
-
-            docs_list.append(TableDoc(name=view.name, type=TableType.postgres_view, description=view.Docs.documentation,
-                                      field_docs=validated_field_list, countries={Country.uk, Country.de}))
-
-    return docs_list
 
 
 def refresh_materialized_view(

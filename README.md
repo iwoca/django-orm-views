@@ -1,4 +1,4 @@
-# django_postgres_views
+# django_orm_views
 
 ## What does this support?
 This package adds support to Django for **writing** Postgres views using:
@@ -49,7 +49,7 @@ migrations and they would just muddy our migration states.
 
 ## Cool! But how do I use this?
 
-* Add `'django_postgres_views'` to your `INSTALLED_APPS`
+* Add `'django_orm_views'` to your `INSTALLED_APPS`
 * Create a `postgres_views.py` (file or package) inside any app
 * Add a `PostgresViewFromQueryset` or `PostgresViewFromSQL` 
 to your `postgres_views.py` (as above)

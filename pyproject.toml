@@ -1,10 +1,10 @@
 [project]
-name = "django-views"
-version = "0.0.1rc1"
+name = "django-orm-views"
+version = "0.0.1rc7"
 authors = [
   { name="Josh Dutton", email="j.dutton@iwoca.co.uk" },
 ]
-description = "A framework for managing database views based on Django"
+description = "A framework for managing database views based on Django, without the migrations"
 readme = "README.md"
 license = { file="LICENSE" }
 requires-python = ">=3.7"
@@ -15,5 +15,5 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/iwoca/django-views"
-"Bug Tracker" = "https://github.com/iwoca/django-views/issues"
+"Homepage" = "https://github.com/iwoca/django-orm-views"
+"Bug Tracker" = "https://github.com/iwoca/django-orm-views/issues"
