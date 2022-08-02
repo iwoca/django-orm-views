@@ -136,3 +136,34 @@ class TestComplexViewFromSQL(BaseTestCase):
                 )
             ]
         )
+
+
+class TestDependentView(BaseTestCase):
+
+    """It would probably be ideal to test the "bad case" of missing dependencies, of cyclic dependencies,
+    but that would require more thought.
+    """
+
+    def test_view_generates_and_returns_as_expected(self):
+        test_data = TestModel.objects.create(
+            integer_col=2,
+            character_col='A',
+            date_col=datetime.date(2019, 1, 1),
+            datetime_col=datetime.datetime(2019, 1, 1),
+        )
+        result = self._execute_raw_sql("""
+            SELECT * FROM "views"."test_dependentview";
+        """)
+
+        self.assertEqual(
+            result,
+            [
+                (
+                    test_data.id,
+                    2,
+                    'A',
+                    datetime.date(2019, 1, 1),
+                    datetime.datetime(2019, 1, 1, tzinfo=datetime.timezone.utc)
+                )
+            ]
+        )

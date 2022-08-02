@@ -66,3 +66,21 @@ class ComplexViewFromSQL(PostgresViewFromSQL):
         FROM test_app_testmodel a
         LEFT JOIN test_app_testmodelwithforeignkey b ON a.id = b.foreign_key_id
     """
+
+
+# -----------------------------------------------------------------------------
+# Dependencies
+# -----------------------------------------------------------------------------
+
+
+class DependentView(PostgresViewFromSQL):
+
+    prefix = 'test'
+
+    view_dependencies = [
+        SimpleViewFromSQL
+    ]
+
+    sql = """
+        SELECT * FROM "views"."test_simpleviewfromsql"
+    """
