@@ -1,4 +1,4 @@
-from django_orm_views import PostgresViewFromQueryset, PostgresViewFromSQL
+from django_orm_views import PostgresViewFromQueryset, PostgresViewFromSQL, PostgresMaterialisedViewMixin
 from django.db.models import F
 
 from .models import TestModel, TestModelWithForeignKey
@@ -84,3 +84,17 @@ class DependentView(PostgresViewFromSQL):
     sql = """
         SELECT * FROM "views"."test_simpleviewfromsql"
     """
+
+
+# -----------------------------------------------------------------------------
+# Materialized
+# -----------------------------------------------------------------------------
+
+
+class SimpleMaterializedView(PostgresMaterialisedViewMixin, PostgresViewFromQueryset):
+
+    prefix = 'test'
+    pk_field = 'id'
+
+    def get_queryset(self):
+        return TestModel.objects.values()

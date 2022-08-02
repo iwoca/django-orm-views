@@ -1,10 +1,11 @@
 import datetime
 
-from django_orm_views import sync_views
+from django_orm_views.sync import sync_views, refresh_materialized_view
 from django.db import connection
 from django.test import TestCase
 
 from .models import TestModel, TestModelWithForeignKey
+from .postgres_views import SimpleMaterializedView
 
 
 class BaseTestCase(TestCase):
@@ -167,3 +168,54 @@ class TestDependentView(BaseTestCase):
                 )
             ]
         )
+
+
+class TestMaterialisedView(BaseTestCase):
+
+    def test_no_results_pre_generation(self):
+        TestModel.objects.create(
+            integer_col=2,
+            character_col='A',
+            date_col=datetime.date(2019, 1, 1),
+            datetime_col=datetime.datetime(2019, 1, 1),
+        )
+        result = self._execute_raw_sql("""
+            SELECT * FROM "views"."test_simplematerializedview";
+        """)
+
+        self.assertEqual(
+            result,
+            []
+        )
+
+    def test_materialised_non_concurrently_returns_results(self):
+        test_data = TestModel.objects.create(
+            integer_col=2,
+            character_col='A',
+            date_col=datetime.date(2019, 1, 1),
+            datetime_col=datetime.datetime(2019, 1, 1),
+        )
+        refresh_materialized_view(SimpleMaterializedView(), concurrently=False)
+
+        result = self._execute_raw_sql("""
+            SELECT * FROM "views"."test_simplematerializedview";
+        """)
+
+        self.assertEqual(
+            result,
+            [
+                (
+                    test_data.id,
+                    2,
+                    'A',
+                    datetime.date(2019, 1, 1),
+                    datetime.datetime(2019, 1, 1, tzinfo=datetime.timezone.utc)
+                )
+            ]
+        )
+
+    def test_refresh_materialised_doesnt_error(self):
+        # We can't check the output here because the database will do this concurrently
+        # and it could lead to a flakey test. We instead check the function doesn't error.
+        refresh_materialized_view(SimpleMaterializedView(), concurrently=True)
+
