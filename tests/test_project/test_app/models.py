@@ -11,4 +11,4 @@ class TestModel(models.Model):
 
 class TestModelWithForeignKey(models.Model):
 
-    foreign_key = models.ForeignKey(TestModel)
+    foreign_key = models.ForeignKey(TestModel, on_delete=models.CASCADE)

@@ -3,7 +3,7 @@ services:
   django:
     build: .
     volumes:
-      - ./:/app/:ro
+      - ./:/app/
     depends_on:
       - postgres
   
