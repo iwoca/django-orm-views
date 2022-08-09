@@ -177,11 +177,13 @@ class PostgresViewFromSQL(AutoRegisterMixin, BasePostgresView, should_register=F
         return ParameterisedSQL(sql=cls.sql, params=[])
 
 
-class ReadableViewFromQueryset(PostgresViewFromQueryset, NotManagedModel, should_init=False, should_register=False):
+class ReadableViewFromQueryset(
+    PostgresViewFromQueryset, NotManagedModel, is_abstract_model=True, should_register=False
+):
     class Meta:
         abstract = True
 
 
-class ReadableViewFromSQL(PostgresViewFromSQL, NotManagedModel, should_init=False, should_register=False):
+class ReadableViewFromSQL(PostgresViewFromSQL, NotManagedModel, is_abstract_model=True, should_register=False):
     class Meta:
         abstract = True

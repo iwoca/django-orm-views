@@ -9,6 +9,8 @@ from .postgres_views import (
     SimpleMaterializedView,
     ReadableTestViewFromQueryset,
     ReadableTestViewFromSQL,
+    ReadableTestViewWithNullableForeignKeys,
+    ReadableTestViewWithNotNullableForeignKeys
 )
 
 
@@ -263,4 +265,53 @@ class TestReadableViews(BaseTestCase):
         test_data = self._add_row()
         results = list(ReadableTestViewFromSQL.objects.values_list('id', flat=True))
         self.assertEqual(results, [test_data.id])
+
+    def test_readable_view_with_foreign_keys__relations_work_as_expected(self):
+        test_data = self._add_row()
+        TestModelWithForeignKey.objects.create(foreign_key=test_data)
+        foreign_keys_view_instance = ReadableTestViewWithNullableForeignKeys.objects.first()
+        sql_view_instance = ReadableTestViewFromSQL.objects.first()
+
+        self.assertEqual(foreign_keys_view_instance.model_foreign_key, test_data)
+        self.assertEqual(foreign_keys_view_instance.one_to_one_model_field, test_data)
+        self.assertEqual(foreign_keys_view_instance.view_foreign_key, sql_view_instance)
+        self.assertEqual(foreign_keys_view_instance.one_to_one_view_field, sql_view_instance)
+
+        # Check relations from the reverse side
+        self.assertEqual(foreign_keys_view_instance, test_data.nullable_test_view_foreign_key.first())
+        self.assertEqual(foreign_keys_view_instance, test_data.nullable_test_view_one_to_one_field)
+        self.assertEqual(foreign_keys_view_instance, sql_view_instance.nullable_test_view_foreign_key.first())
+        self.assertEqual(foreign_keys_view_instance, sql_view_instance.nullable_test_view_one_to_one_field)
+
+    def test_readable_view_with_foreign_keys__exceptions_are_not_raised_when_accessing_non_existing_relations(self):
+        TestModelWithForeignKey.objects.create(foreign_key=None)
+        foreign_keys_view_instance = ReadableTestViewWithNullableForeignKeys.objects.first()
+
+        self.assertIsNone(foreign_keys_view_instance.model_foreign_key)
+        self.assertIsNone(foreign_keys_view_instance.view_foreign_key)
+
+        self.assertIsNone(foreign_keys_view_instance.one_to_one_view_field)
+        self.assertIsNone(foreign_keys_view_instance.one_to_one_model_field)
+
+    def test_readable_view_with_foreign_keys__exceptions_are_raised_when_accessing_not_nullable_non_existing_relations(
+        self
+    ):
+        TestModelWithForeignKey.objects.create(foreign_key=None)
+        foreign_keys_view_instance = ReadableTestViewWithNotNullableForeignKeys.objects.first()
+
+        with self.assertRaises(
+            ReadableTestViewWithNotNullableForeignKeys.model_foreign_key.RelatedObjectDoesNotExist
+        ):
+            self.assertIsNone(foreign_keys_view_instance.model_foreign_key)
+        with self.assertRaises(ReadableTestViewWithNotNullableForeignKeys.view_foreign_key.RelatedObjectDoesNotExist):
+            self.assertIsNone(foreign_keys_view_instance.view_foreign_key)
+        with self.assertRaises(
+            ReadableTestViewWithNotNullableForeignKeys.one_to_one_view_field.RelatedObjectDoesNotExist
+        ):
+            self.assertIsNone(foreign_keys_view_instance.one_to_one_view_field)
+        with self.assertRaises(
+            ReadableTestViewWithNotNullableForeignKeys.one_to_one_model_field.RelatedObjectDoesNotExist
+        ):
+            self.assertIsNone(foreign_keys_view_instance.one_to_one_model_field)
+
 
