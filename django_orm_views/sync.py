@@ -6,7 +6,7 @@ from django.db import connections, transaction
 
 from .exceptions import CyclicDependencyError
 from .constants import SUB_SCHEMA_NAME, LOG
-from .register import registry
+from .register import registry, register_all_views
 from .views import PostgresMaterialisedViewMixin
 
 
@@ -23,18 +23,14 @@ def topological_sort_views(list_of_views):
         any which no longer have any dependencies.
         """
 
-        # Begin with a copy of views so that we don't change any of the classes implicitly
-        # Use view.__class__ for simpler comparison, because we interchange between class/instance.
-        # And convert back before we return.
-        views = views.copy()
-        view_cls_to_view = {view.__class__: view for view in views}
-        view_to_deps = {view.__class__: set(view.view_dependencies) for view in views}
+        view_to_deps = {view: set(view.view_dependencies) for view in views}
 
         while True:
             ordered = set(item for item, dep in view_to_deps.items() if not dep)
             if not ordered:
                 break
-            yield set(view_cls_to_view[view] for view in ordered)
+            yield ordered
+
             view_to_deps = {
                 item: (dep - ordered)
                 for item, dep in view_to_deps.items()
@@ -51,7 +47,7 @@ def topological_sort_views(list_of_views):
 def sync_views(
         grant_select_permissions_to_user: Optional[str] = None
 ):
-    """This function syncs all of the views in the registry.
+    """This function syncs all the views in the registry.
 
     This effectively destroys + recreates all views within a transaction. Views live under a separate schema
     so that we can tear them down/recreate them simply.
@@ -63,6 +59,8 @@ def sync_views(
     logger = LOG.getChild('sync')
 
     logger.info('Syncing view registry for databases %s', list(registry.keys()))
+
+    register_all_views()
 
     for database, views in registry.items():
         views_to_generate = topological_sort_views(views)

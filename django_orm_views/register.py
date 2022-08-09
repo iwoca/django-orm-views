@@ -31,8 +31,7 @@ class AutoRegisterMixin:
             return
 
         # Instantiating the view here because we don't need it as a class
-        instantiated = cls()
-        registry[cls.database].add(instantiated)
+        registry[cls.database].add(cls)
 
 
 def register_all_views():

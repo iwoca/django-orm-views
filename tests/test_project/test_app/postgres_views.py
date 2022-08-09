@@ -1,6 +1,14 @@
-from django_orm_views import PostgresViewFromQueryset, PostgresViewFromSQL, PostgresMaterialisedViewMixin
+from django.db import models
 from django.db.models import F
+from django.utils.functional import classproperty
 
+from django_orm_views.views import (
+    PostgresViewFromQueryset,
+    PostgresViewFromSQL,
+    PostgresMaterialisedViewMixin,
+    ReadableViewFromQueryset,
+    ReadableViewFromSQL
+)
 from .models import TestModel, TestModelWithForeignKey
 
 
@@ -13,7 +21,8 @@ class SimpleViewFromQueryset(PostgresViewFromQueryset):
 
     prefix = 'test'
 
-    def get_queryset(self):
+    @classmethod
+    def get_queryset(cls):
         return TestModel.objects.values()
 
 
@@ -21,7 +30,8 @@ class ComplexViewFromQueryset(PostgresViewFromQueryset):
 
     prefix = 'test'
 
-    def get_queryset(self):
+    @classmethod
+    def get_queryset(cls):
 
         return (
             TestModelWithForeignKey
@@ -96,5 +106,29 @@ class SimpleMaterializedView(PostgresMaterialisedViewMixin, PostgresViewFromQuer
     prefix = 'test'
     pk_field = 'id'
 
-    def get_queryset(self):
+    @classmethod
+    def get_queryset(cls):
         return TestModel.objects.values()
+
+
+class ReadableTestViewFromQueryset(ReadableViewFromQueryset):
+
+    id = models.IntegerField(primary_key=True)
+    character_col = models.CharField(max_length=100)
+
+    @classmethod
+    def get_queryset(cls) -> models.QuerySet:
+        return TestModel.objects.values('id', 'character_col')
+
+
+class ReadableTestViewFromSQL(ReadableViewFromSQL):
+
+    id = models.IntegerField(primary_key=True)
+    character_col = models.CharField(max_length=100)
+
+    @classproperty
+    def sql(cls) -> str:
+        return """
+            SELECT "id", "character_col" FROM test_app_testmodel
+        """
+
