@@ -19,8 +19,8 @@ class MySQLView(PostgresViewFromSQL):
 
 ```python
 class MyQuerysetView(PostgresViewFromQueryset):
-    
-    def get_queryset(self):
+    @classmethod
+    def get_queryset(cls):
         return (
             Table1
             .objects
@@ -33,8 +33,8 @@ class MyQuerysetView(PostgresViewFromQueryset):
 ```python
 
 class MyReadableView(ReadableViewFromQueryset):
-    
-    def get_queryset(self):
+    @classmethod
+    def get_queryset(cls):
         return (
             Table1
             .objects
@@ -102,8 +102,9 @@ A `postgres_views.py` file might look something like the following:
 class ComplexViewFromQueryset(PostgresViewFromQueryset):
 
     prefix = 'test'  # This is optional, but allows you to prefix the table names for views
-
-    def get_queryset(self):  # Return a `.values` with the query you desire
+    
+    @classmethod
+    def get_queryset(cls):  # Return a `.values` with the query you desire
         return (
             TestModelWithForeignKey
             .objects
