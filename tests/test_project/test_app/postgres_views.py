@@ -1,6 +1,14 @@
-from django_orm_views import PostgresViewFromQueryset, PostgresViewFromSQL, PostgresMaterialisedViewMixin
-from django.db.models import F
+from django.db import models
+from django.db.models import F, OuterRef
+from django.utils.functional import classproperty
 
+from django_orm_views.views import (
+    PostgresViewFromQueryset,
+    PostgresViewFromSQL,
+    PostgresMaterialisedViewMixin,
+    ReadableViewFromQueryset,
+    ReadableViewFromSQL
+)
 from .models import TestModel, TestModelWithForeignKey
 
 
@@ -13,7 +21,8 @@ class SimpleViewFromQueryset(PostgresViewFromQueryset):
 
     prefix = 'test'
 
-    def get_queryset(self):
+    @classmethod
+    def get_queryset(cls):
         return TestModel.objects.values()
 
 
@@ -21,7 +30,8 @@ class ComplexViewFromQueryset(PostgresViewFromQueryset):
 
     prefix = 'test'
 
-    def get_queryset(self):
+    @classmethod
+    def get_queryset(cls):
 
         return (
             TestModelWithForeignKey
@@ -96,5 +106,110 @@ class SimpleMaterializedView(PostgresMaterialisedViewMixin, PostgresViewFromQuer
     prefix = 'test'
     pk_field = 'id'
 
-    def get_queryset(self):
+    @classmethod
+    def get_queryset(cls):
         return TestModel.objects.values()
+
+
+# -----------------------------------------------------------------------------
+# Readable Views
+# -----------------------------------------------------------------------------
+
+
+class ReadableTestViewFromQueryset(ReadableViewFromQueryset):
+
+    id = models.IntegerField(primary_key=True)
+    character_col = models.CharField(max_length=100)
+
+    @classmethod
+    def get_queryset(cls) -> models.QuerySet:
+        return TestModel.objects.values('id', 'character_col')
+
+
+class ReadableTestViewFromSQL(ReadableViewFromSQL):
+
+    id = models.IntegerField(primary_key=True)
+    character_col = models.CharField(max_length=100)
+
+    @classproperty
+    def sql(cls) -> str:
+        return """
+            SELECT "id", "character_col" FROM test_app_testmodel
+        """
+
+
+class ReadableTestViewWithNullableForeignKeys(ReadableViewFromQueryset):
+
+    view_dependencies = [ReadableTestViewFromSQL]
+    id = models.IntegerField(primary_key=True)
+    model_foreign_key = models.ForeignKey(
+        TestModel, on_delete=models.DO_NOTHING, related_name="nullable_test_view_foreign_key", null=True
+    )
+    view_foreign_key = models.ForeignKey(
+        ReadableTestViewFromSQL, on_delete=models.DO_NOTHING, related_name="nullable_test_view_foreign_key", null=True
+    )
+    one_to_one_model_field = models.OneToOneField(
+        TestModel, on_delete=models.DO_NOTHING, related_name="nullable_test_view_one_to_one_field", null=True
+    )
+    one_to_one_view_field = models.OneToOneField(
+        ReadableTestViewFromSQL,
+        on_delete=models.DO_NOTHING,
+        related_name="nullable_test_view_one_to_one_field",
+        null=True
+    )
+
+    @classmethod
+    def get_queryset(cls) -> models.QuerySet:
+        return TestModelWithForeignKey.objects.annotate(
+            model_foreign_key_id=F("foreign_key"),
+            view_foreign_key_id=ReadableTestViewFromSQL.objects.filter(id=OuterRef("foreign_key")).values("id")[:1],
+            one_to_one_view_field_id=ReadableTestViewFromSQL.objects.filter(
+                id=OuterRef("foreign_key")
+            ).values("id")[:1],
+            one_to_one_model_field_id=TestModel.objects.filter(
+                id=OuterRef("foreign_key")
+            ).values("id")[:1]
+        ).values(
+            'id',
+            'model_foreign_key_id',
+            'view_foreign_key_id',
+            'one_to_one_view_field_id',
+            'one_to_one_model_field_id'
+        )
+
+
+class ReadableTestViewWithNotNullableForeignKeys(ReadableViewFromQueryset):
+    view_dependencies = [ReadableTestViewFromSQL]
+
+    id = models.IntegerField(primary_key=True)
+    model_foreign_key = models.ForeignKey(
+        TestModel, on_delete=models.DO_NOTHING, related_name="test_view_foreign_key",
+    )
+    view_foreign_key = models.ForeignKey(
+        ReadableTestViewFromSQL, on_delete=models.DO_NOTHING, related_name="test_view_foreign_key"
+    )
+    one_to_one_model_field = models.OneToOneField(
+        TestModel, on_delete=models.DO_NOTHING, related_name="test_view_one_to_one_field"
+    )
+    one_to_one_view_field = models.OneToOneField(
+        ReadableTestViewFromSQL, on_delete=models.DO_NOTHING, related_name="test_view_one_to_one_field"
+    )
+
+    @classmethod
+    def get_queryset(cls) -> models.QuerySet:
+        return TestModelWithForeignKey.objects.annotate(
+            model_foreign_key_id=F("foreign_key"),
+            view_foreign_key_id=ReadableTestViewFromSQL.objects.filter(id=OuterRef("foreign_key")).values("id")[:1],
+            one_to_one_view_field_id=ReadableTestViewFromSQL.objects.filter(
+                id=OuterRef("foreign_key")
+            ).values("id")[:1],
+            one_to_one_model_field_id=TestModel.objects.filter(
+                id=OuterRef("foreign_key")
+            ).values("id")[:1]
+        ).values(
+            'id',
+            'model_foreign_key_id',
+            'view_foreign_key_id',
+            'one_to_one_view_field_id',
+            'one_to_one_model_field_id'
+        )

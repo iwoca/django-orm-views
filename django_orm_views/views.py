@@ -11,6 +11,7 @@ except ImportError:
 from .constants import SUB_SCHEMA_NAME, ParameterisedSQL
 from .register import AutoRegisterMixin
 from .exceptions import InvalidViewDepencies
+from .not_managed_model import NotManagedModel
 
 
 class HiddenViewMixin:
@@ -28,20 +29,21 @@ class PostgresMaterialisedViewMixin:
 
     pk_field: Optional[str] = None
 
-    @property
-    def creation_sql(self) -> ParameterisedSQL:
-        parameterised_sql = self._parameterised_sql
-        sql = f"CREATE MATERIALIZED VIEW {self.name_with_schema} AS {parameterised_sql.sql};"
+    @classproperty
+    def creation_sql(cls) -> ParameterisedSQL:
+        parameterised_sql = cls._parameterised_sql
+        sql = f"CREATE MATERIALIZED VIEW {cls.name_with_schema} AS {parameterised_sql.sql};"
 
-        if self.pk_field:
-            sql += f"CREATE UNIQUE INDEX {self.name}_{self.pk_field} ON {self.name_with_schema} ({self.pk_field});"
+        if cls.pk_field:
+            sql += f"CREATE UNIQUE INDEX {cls.name}_{cls.pk_field} ON {cls.name_with_schema} ({cls.pk_field});"
 
         return ParameterisedSQL(
             sql=sql,
             params=parameterised_sql.params,
         )
 
-    def get_refresh_sql(self, concurrently: bool = False) -> str:
+    @classmethod
+    def get_refresh_sql(cls, concurrently: bool = False) -> str:
         """Get the SQL statement to refresh the view.
 
         Args:
@@ -52,10 +54,10 @@ class PostgresMaterialisedViewMixin:
         """
         statement_parts = ["REFRESH MATERIALIZED VIEW"]
         if concurrently:
-            if not self.pk_field:
+            if not cls.pk_field:
                 raise ValueError("Can't refresh concurrently without a pk_field")
             statement_parts.append("CONCURRENTLY")
-        statement_parts.append(f"{self.name_with_schema};")
+        statement_parts.append(f"{cls.name_with_schema};")
         return " ".join(statement_parts)
 
 
@@ -70,15 +72,16 @@ class BasePostgresView:
         if len(set([view.database for view in cls.view_dependencies])) > 1:
             raise InvalidViewDepencies("View dependencies connect to more than one database")
 
-    @property
-    def _parameterised_sql(self) -> ParameterisedSQL:
+
+    @classproperty
+    def _parameterised_sql(cls) -> ParameterisedSQL:
         """Used to create a common interface in the two base classes.  This is
         entirely internal and externals methods are exposed to set this accordingly.
         """
         raise NotImplementedError
 
-    @property
-    def creation_sql(self) -> ParameterisedSQL:
+    @classproperty
+    def creation_sql(cls) -> ParameterisedSQL:
         """Returns the SQL to create the view.
 
         Note that this creates the views under the schema SUB_SCHEMA_NAME.  This
@@ -98,9 +101,9 @@ class BasePostgresView:
         representation to the cursor itself (in this case, an ISO Format datetime,
         which is not the default `__str__` in python)
         """
-        parameterised_sql = self._parameterised_sql
+        parameterised_sql = cls._parameterised_sql
         return ParameterisedSQL(
-            sql=f'CREATE VIEW {self.name_with_schema} AS {parameterised_sql.sql};',
+            sql=f'CREATE VIEW {cls.name_with_schema} AS {parameterised_sql.sql};',
             params=parameterised_sql.params
         )
 
@@ -131,8 +134,8 @@ class BasePostgresView:
         """The name of the view nested under the name of the base schema."""
         return f'{SUB_SCHEMA_NAME}.{cls.name}'
 
-    @property
-    def schema_qry(self) -> ParameterisedSQL:
+    @classproperty
+    def schema_qry(cls) -> ParameterisedSQL:
         qry = f"""
           SELECT
            column_name,
@@ -141,7 +144,7 @@ class BasePostgresView:
            information_schema.columns
         WHERE
            table_schema = '{SUB_SCHEMA_NAME}'
-           AND table_name = '{self.name}'
+           AND table_name = '{cls.name}'
         
         """
         return ParameterisedSQL(sql=qry, params=[])
@@ -150,12 +153,13 @@ class BasePostgresView:
 class PostgresViewFromQueryset(AutoRegisterMixin, BasePostgresView, should_register=False):
     """Used as the interface to the package for defining views based on a Django Queryset."""
 
-    def get_queryset(self) -> QuerySet:
+    @classmethod
+    def get_queryset(cls) -> QuerySet:
         raise NotImplementedError
 
-    @property
-    def _parameterised_sql(self) -> ParameterisedSQL:
-        qset = self.get_queryset()
+    @classproperty
+    def _parameterised_sql(cls) -> ParameterisedSQL:
+        qset = cls.get_queryset()
         sql, params = qset.query.sql_with_params()
         parameterised_sql = ParameterisedSQL(sql=sql, params=params)
         return parameterised_sql
@@ -168,6 +172,18 @@ class PostgresViewFromSQL(AutoRegisterMixin, BasePostgresView, should_register=F
     def sql(cls):
         raise NotImplementedError
 
-    @property
-    def _parameterised_sql(self) -> ParameterisedSQL:
-        return ParameterisedSQL(sql=self.sql, params=[])
+    @classproperty
+    def _parameterised_sql(cls) -> ParameterisedSQL:
+        return ParameterisedSQL(sql=cls.sql, params=[])
+
+
+class ReadableViewFromQueryset(
+    PostgresViewFromQueryset, NotManagedModel, is_abstract_model=True, should_register=False
+):
+    class Meta:
+        abstract = True
+
+
+class ReadableViewFromSQL(PostgresViewFromSQL, NotManagedModel, is_abstract_model=True, should_register=False):
+    class Meta:
+        abstract = True
