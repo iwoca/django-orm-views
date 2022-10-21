@@ -5,7 +5,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='django_orm_views',
-    version='2.0.0',
+    version='2.0.1',
     description='Package to define manage Postgres views on a Django server',
     author='iwoca',
     packages=find_packages(exclude=["*.tests", "*.tests.*", "tests.*", "tests"]),
