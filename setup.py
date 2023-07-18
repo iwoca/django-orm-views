@@ -12,7 +12,7 @@ setup(
     include_package_data=True,
     python_requires='>=3.6',
     install_requires=[
-        'django>=2.1,<4.1',
+        'django>=2.1,<4.2',
         'dataclasses>=0.7; python_version < "3.7.0"',
     ],
     extras_require={
