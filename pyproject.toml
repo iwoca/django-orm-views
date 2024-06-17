@@ -1,6 +1,6 @@
 [project]
 name = "django-orm-views"
-version = "2.0.2"
+version = "2.0.3"
 authors = [
   { name="Josh Dutton", email="j.dutton@iwoca.co.uk" },
 ]
